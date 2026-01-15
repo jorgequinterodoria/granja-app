@@ -69,11 +69,15 @@ export default function BreedingManager({ pigId }) {
                 <div className="bg-pink-50 border border-pink-200 p-6 rounded-xl flex items-center justify-between shadow-sm">
                     <div>
                         <h4 className="text-pink-800 font-bold uppercase text-xs tracking-wider mb-1">Ciclo Activo</h4>
-                        <p className="text-pink-900 font-medium">Última Monta: {lastActiveMonta.event_date}</p>
+                        <p className="text-pink-900 font-medium">
+                            Última Monta: {new Date(lastActiveMonta.event_date).toLocaleDateString('es-ES', { dateStyle: 'long' })}
+                        </p>
                     </div>
                     <div className="text-right">
                         <p className="text-sm text-pink-600">Fecha Probable de Parto</p>
-                        <p className="text-2xl font-bold text-pink-700">{probablePartoDate}</p>
+                        <p className="text-2xl font-bold text-pink-700">
+                            {new Date(probablePartoDate).toLocaleDateString('es-ES', { dateStyle: 'long' })}
+                        </p>
                         {daysRemaining > 0 ? (
                             <span className="bg-pink-200 text-pink-800 text-xs px-2 py-1 rounded-full font-bold">
                                 Faltan {daysRemaining} días
@@ -102,7 +106,7 @@ export default function BreedingManager({ pigId }) {
                                 <div className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
                                     <div className="flex justify-between items-start">
                                         <span className="font-bold text-slate-700">{event.event_type}</span>
-                                        <span className="text-xs text-slate-400">{event.event_date}</span>
+                                        <span className="text-xs text-slate-400">{new Date(event.event_date).toLocaleDateString('es-ES', { dateStyle: 'long' })}</span>
                                     </div>
                                     {event.details && <p className="text-slate-600 text-sm mt-1">{event.details}</p>}
                                     <div className="mt-1 text-right">
