@@ -1,7 +1,34 @@
+@import './styles/utilities.css';
+@import './styles/animations.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-    @apply bg-slate-50;
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply bg-slate-50 antialiased;
+    }
+
+    /* Accessibility: Focus rings */
+    :focus-visible {
+        @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+    }
+}
+
+/* Respect user preference for motion */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    ::before,
+    ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }

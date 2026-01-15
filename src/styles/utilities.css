@@ -1,0 +1,44 @@
+/* Glassmorphism Utilities */
+
+/* Standard glass effect - light background with blur */
+.glass {
+  background: rgba(255, 255, 255, 0.9); /* Fallback for browsers without backdrop-filter */
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+@supports (backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px)) {
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+/* Dark glass effect - dark background with blur */
+.glass-dark {
+  background: rgba(0, 0, 0, 0.6); /* Fallback for browsers without backdrop-filter */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@supports (backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px)) {
+  .glass-dark {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+/* Premium glass card effect - enhanced blur and shadow */
+.glass-card {
+  background: rgba(255, 255, 255, 0.9); /* Fallback for browsers without backdrop-filter */
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+@supports (backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px)) {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db';
+import Spinner from './Spinner';
 
 export default function BiosecurityAccess() {
     const [form, setForm] = useState({
@@ -12,6 +13,9 @@ export default function BiosecurityAccess() {
     });
 
     const [showAlert, setShowAlert] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [success, setSuccess] = useState(false);
+    const [error, setError] = useState(null);
 
     const checkRisk = (origin) => {
         // Simple heuristic for demo
@@ -33,10 +37,17 @@ export default function BiosecurityAccess() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsSubmitting(true);
+        setError(null);
+        setSuccess(false);
+        
         if (form.risk_level === 'Alto') {
             // Block or require override
             const confirm = window.confirm("⚠️ ALERTA DE BIOSEGURIDAD: El origen representa un riesgo Alto. ¿Autoriza ingreso bajo protocolo de cuarentena?");
-            if (!confirm) return;
+            if (!confirm) {
+                setIsSubmitting(false);
+                return;
+            }
         }
 
         try {
@@ -48,32 +59,68 @@ export default function BiosecurityAccess() {
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             });
-            alert("✅ Acceso Registrado");
+            setSuccess(true);
             setForm({ visitor_name: '', company: '', vehicle_plate: '', origin: '', risk_level: 'Bajo' });
             setShowAlert(false);
+            // Clear success message after 3 seconds
+            setTimeout(() => setSuccess(false), 3000);
         } catch (error) {
             console.error(error);
+            setError("Error al registrar acceso");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     return (
         <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100">
             <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                🛡️ Control de Acceso <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Zona Limpia</span>
+                🛡️ Control de Acceso <span className="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded-full">Zona Limpia</span>
             </h2>
 
             {showAlert && (
-                <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r animate-pulse">
+                <div className="mb-6 glass-card border-l-4 border-accent-500 p-4 rounded-r">
                     <div className="flex">
                         <div className="flex-shrink-0">
-                            ⛔️
+                            <span className="text-2xl animate-pulse-glow">⛔️</span>
                         </div>
                         <div className="ml-3">
-                            <h3 className="text-sm font-bold text-red-800">PROHIBIDO EL INGRESO</h3>
-                            <div className="text-sm text-red-700">
+                            <h3 className="text-sm font-bold text-accent-800 flex items-center gap-2">
+                                PROHIBIDO EL INGRESO
+                                <span className="bg-accent-500 text-white text-xs px-2 py-1 rounded-full animate-pulse-glow">ALTO RIESGO</span>
+                            </h3>
+                            <div className="text-sm text-accent-700">
                                 <p>Riesgo Biológico Detectado. Origen externo de alto riesgo. Aplique protocolo de ducha y cuarentena de 48h.</p>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {error && (
+                <div className="bg-red-50 text-red-500 p-4 rounded-xl mb-4 border border-red-200 flex items-start gap-3 animate-shake shadow-sm">
+                    <div className="flex-shrink-0 mt-0.5">
+                        <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                    </div>
+                    <div className="flex-1">
+                        <p className="font-medium text-red-800">Error</p>
+                        <p className="text-sm text-red-700 mt-1">{error}</p>
+                    </div>
+                </div>
+            )}
+
+            {success && (
+                <div className="bg-secondary-50 text-secondary-500 p-4 rounded-xl mb-4 border border-secondary-200 flex items-start gap-3 animate-slide-up shadow-sm">
+                    <div className="flex-shrink-0 mt-0.5">
+                        <svg className="w-5 h-5 text-secondary-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                    </div>
+                    <div className="flex-1">
+                        <p className="font-medium text-secondary-800">¡Éxito!</p>
+                        <p className="text-sm text-secondary-700 mt-1">Acceso registrado correctamente</p>
                     </div>
                 </div>
             )}
@@ -135,8 +182,19 @@ export default function BiosecurityAccess() {
                     </div>
                 </div>
 
-                <button className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all ${showAlert ? 'bg-red-600 hover:bg-red-700' : 'bg-slate-800 hover:bg-slate-900'}`}>
-                    {showAlert ? '🚨 AUTORIZAR BAJO RESPONSABILIDAD' : '✅ Registrar Ingreso'}
+                <button 
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 ${showAlert ? 'bg-gradient-to-r from-accent-600 to-accent-500 hover:from-accent-700 hover:to-accent-600 hover:shadow-xl hover:scale-105 active:scale-95' : 'bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 hover:shadow-xl hover:scale-105 active:scale-95'}`}
+                >
+                    {isSubmitting ? (
+                        <>
+                            <Spinner size="sm" color="white" />
+                            <span>Registrando...</span>
+                        </>
+                    ) : (
+                        showAlert ? '🚨 AUTORIZAR BAJO RESPONSABILIDAD' : '✅ Registrar Ingreso'
+                    )}
                 </button>
             </form>
         </div>
