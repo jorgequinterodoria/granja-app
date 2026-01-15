@@ -5,6 +5,8 @@ import { db } from '../db';
 import WeightTracker from './WeightTracker';
 import BreedingManager from './BreedingManager';
 
+import CostDashboard from './CostDashboard';
+
 export default function PigDetail({ pigId, onBack }) {
     const pig = useLiveQuery(() => db.pigs.get(pigId), [pigId]);
     const [activeTab, setActiveTab] = useState('health'); // health, weight, reproduction
@@ -59,7 +61,7 @@ export default function PigDetail({ pigId, onBack }) {
     const showReproduction = pig.sexo === 'Hembra';
 
     return (
-        <div className="bg-white rounded-2xl shadow-xl min-h-[50vh]">
+        <div className="bg-white rounded-2xl shadow-xl min-h-[50vh] space-y-6">
 
             {/* Header / Nav */}
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
@@ -81,6 +83,11 @@ export default function PigDetail({ pigId, onBack }) {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Profitability Dashboard */}
+            <div className="px-6">
+                <CostDashboard pigId={pigId} />
             </div>
 
             {/* Tabs */}

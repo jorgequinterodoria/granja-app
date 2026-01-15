@@ -11,12 +11,19 @@ export const syncService = {
     const pendingHealth = await db.health_records.where('syncStatus').equals('pending').toArray();
     const pendingWeight = await db.weight_logs.where('syncStatus').equals('pending').toArray();
     const pendingBreeding = await db.breeding_events.where('syncStatus').equals('pending').toArray();
+    
+    // Pending changes for New Modules
+    const pendingFeedInv = await db.feed_inventory.where('syncStatus').equals('pending').toArray();
+    const pendingFeedUsage = await db.feed_usage.where('syncStatus').equals('pending').toArray();
+    const pendingAccess = await db.access_logs.where('syncStatus').equals('pending').toArray();
+    const pendingPoints = await db.user_points.where('syncStatus').equals('pending').toArray();
+    // Note: sanitary_zones are usually read-only or server-managed, skipping push for now unless needed.
 
-    if (pendingPigs.length === 0 && pendingHealth.length === 0 && pendingWeight.length === 0 && pendingBreeding.length === 0) {
-        // Even if no pending changes, we might want to pull latest from server?
-        // Let's allow pull if we haven't synced in a while or just always pull.
-        // For efficiency, maybe we only pull if no local changes? Or always.
-        // Let's continue to pull.
+    const allPendingCount = pendingPigs.length + pendingHealth.length + pendingWeight.length + pendingBreeding.length +
+                            pendingFeedInv.length + pendingFeedUsage.length + pendingAccess.length + pendingPoints.length;
+
+    if (allPendingCount === 0) {
+        // Continue to pull
     }
 
     const lastPulledAt = localStorage.getItem('lastPulledAt');
@@ -35,7 +42,11 @@ export const syncService = {
               pigs: pendingPigs,
               health_records: pendingHealth,
               weight_logs: pendingWeight,
-              breeding_events: pendingBreeding
+              breeding_events: pendingBreeding,
+              feed_inventory: pendingFeedInv,
+              feed_usage: pendingFeedUsage,
+              access_logs: pendingAccess,
+              user_points: pendingPoints
           },
           lastPulledAt,
         }),
@@ -48,71 +59,47 @@ export const syncService = {
       const data = await response.json();
 
       // 2. Process server response using a transaction
-      await db.transaction('rw', db.pigs, db.health_records, db.weight_logs, db.breeding_events, async () => {
+      await db.transaction('rw', db.pigs, db.health_records, db.weight_logs, db.breeding_events, 
+           db.feed_inventory, db.feed_usage, db.access_logs, db.sanitary_zones, db.user_points, async () => {
         
-        // Mark pushed PIGS as synced
-        if (pendingPigs.length > 0) {
-             const pendingIds = pendingPigs.map(p => p.id);
-             await db.pigs.where('id').anyOf(pendingIds).modify({ syncStatus: 'synced' });
-        }
+        // Mark pushed items as SYNCED
+        const markSynced = async (table, items) => {
+            if (items.length > 0) {
+                const ids = items.map(i => i.id);
+                await table.where('id').anyOf(ids).modify({ syncStatus: 'synced' });
+            }
+        };
 
-        // Mark pushed HEALTH RECORDS as synced
-        if (pendingHealth.length > 0) {
-            const pendingHealthIds = pendingHealth.map(h => h.id);
-            await db.health_records.where('id').anyOf(pendingHealthIds).modify({ syncStatus: 'synced' });
-       }
+        await markSynced(db.pigs, pendingPigs);
+        await markSynced(db.health_records, pendingHealth);
+        await markSynced(db.weight_logs, pendingWeight);
+        await markSynced(db.breeding_events, pendingBreeding);
+        
+        await markSynced(db.feed_inventory, pendingFeedInv);
+        await markSynced(db.feed_usage, pendingFeedUsage);
+        await markSynced(db.access_logs, pendingAccess);
+        await markSynced(db.user_points, pendingPoints);
 
-        // Mark pushed WEIGHT LOGS as synced
-        if (pendingWeight.length > 0) {
-            const pendingIds = pendingWeight.map(w => w.id);
-            await db.weight_logs.where('id').anyOf(pendingIds).modify({ syncStatus: 'synced' });
-        }
 
-        // Mark pushed BREEDING EVENTS as synced
-        if (pendingBreeding.length > 0) {
-            const pendingIds = pendingBreeding.map(b => b.id);
-            await db.breeding_events.where('id').anyOf(pendingIds).modify({ syncStatus: 'synced' });
-        }
+        // Apply Server Updates
+        const applyUpdates = async (table, updates) => {
+            if (updates && updates.length > 0) {
+                const itemsToPut = updates.map(item => ({...item, syncStatus: 'synced'}));
+                await table.bulkPut(itemsToPut);
+            }
+        };
 
-        // Apply server updates for PIGS
-        const incomingPigs = data.changes?.pigs?.updated || [];
-        if (incomingPigs.length > 0) {
-             const pigsToPut = incomingPigs.map(pig => ({
-                 ...pig,
-                 syncStatus: 'synced'
-             }));
-             await db.pigs.bulkPut(pigsToPut);
-        }
+        await applyUpdates(db.pigs, data.changes?.pigs?.updated);
+        await applyUpdates(db.health_records, data.changes?.health_records?.updated);
+        await applyUpdates(db.weight_logs, data.changes?.weight_logs?.updated);
+        await applyUpdates(db.breeding_events, data.changes?.breeding_events?.updated);
+        
+        await applyUpdates(db.feed_inventory, data.changes?.feed_inventory?.updated);
+        await applyUpdates(db.feed_usage, data.changes?.feed_usage?.updated);
+        await applyUpdates(db.access_logs, data.changes?.access_logs?.updated);
+        await applyUpdates(db.sanitary_zones, data.changes?.sanitary_zones?.updated);
+        await applyUpdates(db.user_points, data.changes?.user_points?.updated);
 
-        // Apply server updates for HEALTH RECORDS
-        const incomingHealth = data.changes?.health_records?.updated || [];
-        if (incomingHealth.length > 0) {
-            const healthToPut = incomingHealth.map(record => ({
-                ...record,
-                syncStatus: 'synced'
-            }));
-            await db.health_records.bulkPut(healthToPut);
-       }
-
-        // Apply server updates for WEIGHT LOGS
-        const incomingWeight = data.changes?.weight_logs?.updated || [];
-        if (incomingWeight.length > 0) {
-             const itemsToPut = incomingWeight.map(item => ({
-                 ...item,
-                 syncStatus: 'synced'
-             }));
-             await db.weight_logs.bulkPut(itemsToPut);
-        }
-
-        // Apply server updates for BREEDING EVENTS
-        const incomingBreeding = data.changes?.breeding_events?.updated || [];
-        if (incomingBreeding.length > 0) {
-             const itemsToPut = incomingBreeding.map(item => ({
-                 ...item,
-                 syncStatus: 'synced'
-             }));
-             await db.breeding_events.bulkPut(itemsToPut);
-        }
       });
 
       // 3. Update timestamp
@@ -120,7 +107,7 @@ export const syncService = {
         localStorage.setItem('lastPulledAt', data.timestamp);
       }
 
-      return { success: true, count: (pendingPigs.length + pendingHealth.length + pendingWeight.length + pendingBreeding.length) };
+      return { success: true, count: allPendingCount };
 
     } catch (error) {
       console.error('Sync Error:', error);
@@ -129,10 +116,12 @@ export const syncService = {
   },
 
   async getPendingCount() {
-    const pigs = await db.pigs.where('syncStatus').equals('pending').count();
-    const health = await db.health_records.where('syncStatus').equals('pending').count();
-    const weight = await db.weight_logs.where('syncStatus').equals('pending').count();
-    const breeding = await db.breeding_events.where('syncStatus').equals('pending').count();
-    return pigs + health + weight + breeding;
+    const tables = [db.pigs, db.health_records, db.weight_logs, db.breeding_events, 
+                    db.feed_inventory, db.feed_usage, db.access_logs, db.user_points];
+    let total = 0;
+    for (const table of tables) {
+        total += await table.where('syncStatus').equals('pending').count();
+    }
+    return total;
   }
 };
