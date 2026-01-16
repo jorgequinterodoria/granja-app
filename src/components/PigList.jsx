@@ -50,21 +50,21 @@ export default function PigList({ onSelectPig }) {
                                         <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary-100 to-primary-200 text-primary-600 text-sm font-semibold">
                                             🐷
                                         </span>
-                                        {pig.numero_arete}
+                                        {pig.tag_number || pig.numero_arete}
                                     </h3>
                                     {pig.nombre && (
                                         <p className="text-sm font-medium text-slate-500 mt-1 ml-10">{pig.nombre}</p>
                                     )}
                                     <span className="inline-block mt-2 text-xs font-semibold text-primary-600 uppercase tracking-wider px-3 py-1 rounded-full bg-primary-50 border border-primary-100">
-                                        {pig.etapa}
+                                        {pig.stage || pig.etapa}
                                     </span>
                                 </div>
                                 <div className="text-right">
-                                    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl shadow-sm transition-all duration-200 ${pig.sexo === 'Macho'
+                                    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl shadow-sm transition-all duration-200 ${(pig.sex || pig.sexo) === 'Macho'
                                         ? 'bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 border border-blue-200'
                                         : 'bg-gradient-to-br from-pink-50 to-pink-100 text-pink-700 border border-pink-200'
                                         }`}>
-                                        {pig.sexo === 'Macho' ? '♂' : '♀'} {pig.sexo}
+                                        {(pig.sex || pig.sexo) === 'Macho' ? '♂' : '♀'} {pig.sex || pig.sexo}
                                     </span>
                                 </div>
                             </div>
@@ -78,7 +78,7 @@ export default function PigList({ onSelectPig }) {
                                     </div>
                                     <div>
                                         <p className="text-xs text-slate-500 font-medium">Peso Actual</p>
-                                        <p className="font-bold text-lg text-slate-800">{pig.peso} <span className="text-sm font-normal text-slate-500">kg</span></p>
+                                        <p className="font-bold text-lg text-slate-800">{pig.weight || pig.peso} <span className="text-sm font-normal text-slate-500">kg</span></p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1.5" title={pig.syncStatus === 'synced' ? "Sincronizado" : "Pendiente de subir"}>

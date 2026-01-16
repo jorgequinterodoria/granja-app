@@ -1,57 +1,55 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 
-export function useProfitability(pigId) {
+export const useProfitability = (pigId) => {
+  // Constants (could be fetched from settings)
+  const MARKET_PRICE_PER_KG = 8000; // COP example
+
+  const stats = useLiveQuery(async () => {
+    if (!pigId) return null;
+
     // 1. Get Pig Current Weight
-    const pig = useLiveQuery(() => db.pigs.get(pigId), [pigId]);
+    const pig = await db.pigs.get(pigId);
+    if (!pig) return null;
 
-    // 2. Get Feed Usage for this pig
-    const feedUsage = useLiveQuery(
-        () => db.feed_usage.where('pig_id').equals(pigId || '').toArray()
-        , [pigId]
-    );
+    const currentWeight = pig.weight || 0;
+    const estimatedValue = currentWeight * MARKET_PRICE_PER_KG;
 
-    // 3. Get all Feed Inventory (to know costs)
-    const feedInventory = useLiveQuery(
-        () => db.feed_inventory.toArray()
-    );
-
-    if (!pig || !feedUsage || !feedInventory) {
-        return { 
-            isLoading: true, 
-            marketValue: 0, 
-            totalCost: 0, 
-            netProfit: 0, 
-            roi: 0 
-        };
+    // 2. Calculate Feed Costs
+    // This is complex if batch logic usage is stored. 
+    // Simplified: Find all usage for this pig.
+    const usages = await db.feed_usage.where('pig_id').equals(pigId).toArray();
+    
+    let feedCost = 0;
+    for (const u of usages) {
+      // We need cost_per_kg at time of usage? Or current? 
+      // Ideally usage table should store cost snapshot. 
+      // For now, look up current cost (Approximation)
+      const feed = await db.feed_inventory.get(u.feed_id);
+      if (feed) {
+        feedCost += (u.amount_kg * feed.cost_per_kg);
+      }
     }
 
-    // Constants (In real app, these could be configurable settings)
-    const MARKET_PRICE_PER_KG = 9500; // COP per Kg roughly
-    const FIXED_COSTS = 50000; // Vaccines, water, labor per pig roughly
+    // 3. Calculate Health Costs
+    const healthEvents = await db.health_events.where('pig_id').equals(pigId).toArray();
+    const healthCost = healthEvents.reduce((acc, curr) => acc + (parseFloat(curr.cost) || 0), 0);
 
-    // Calculate Feed Cost
-    let feedCost = 0;
-    feedUsage.forEach(usage => {
-        const feedItem = feedInventory.find(f => f.id === usage.feed_id);
-        if (feedItem) {
-            feedCost += (usage.amount_kg * feedItem.cost_per_kg);
-        }
-    });
-
-    const totalCost = feedCost + FIXED_COSTS;
-    const marketValue = pig.peso * MARKET_PRICE_PER_KG;
-    const netProfit = marketValue - totalCost;
-    const roi = totalCost > 0 ? ((netProfit / totalCost) * 100) : 0;
+    const totalCost = feedCost + healthCost;
+    const profit = estimatedValue - totalCost;
+    const isProfitable = profit > 0;
 
     return {
-        isLoading: false,
-        marketValue,
-        totalCost,
-        feedCost,
-        fixedCosts: FIXED_COSTS,
-        netProfit,
-        roi: roi.toFixed(1),
-        isProfitable: netProfit > 0 && roi > 15
+      currentWeight,
+      estimatedValue,
+      feedCost,
+      healthCost,
+      totalCost,
+      profit,
+      isProfitable
     };
-}
+
+  }, [pigId]);
+
+  return stats;
+};

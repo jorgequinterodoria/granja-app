@@ -14,7 +14,7 @@ export default function PigDetail({ pigId, onBack }) {
 
     // Live query for health records associated with this pig, ordered by date desc
     const healthRecords = useLiveQuery(
-        () => db.health_records
+        () => db.health_events
             .where('pig_id')
             .equals(pigId)
             .toArray()
@@ -40,7 +40,7 @@ export default function PigDetail({ pigId, onBack }) {
         setSuccess(false);
 
         try {
-            await db.health_records.add({
+            await db.health_events.add({
                 id: uuidv4(),
                 pig_id: pigId,
                 ...form,

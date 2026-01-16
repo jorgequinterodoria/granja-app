@@ -1,28 +1,64 @@
 import Dexie from 'dexie';
 
-export const db = new Dexie('GranjaDatabase');
+export const db = new Dexie('GranjaPorcinaDB');
 
 db.version(1).stores({
-  pigs: 'id, syncStatus, status, updated_at'
+  // CORE BUSINESS (Mirrors SQL + syncStatus for offline-first)
+  farms: 'id, name, plan', 
+  users: 'id, email, role_id',
+  roles: 'id, name',
+  permissions: 'id, slug',
+  role_permissions: '[role_id+permission_id], role_id, permission_id',
+  
+  sections: 'id, name, syncStatus',
+  pens: 'id, section_id, name, syncStatus',
+  
+  pigs: 'id, pen_id, tag_number, numero_arete, sex, sexo, stage, etapa, status, syncStatus, updated_at',
+  weight_logs: 'id, pig_id, weight, date, date_measured, syncStatus',
+  breeding_events: 'id, pig_id, event_type, date, syncStatus',
+  health_events: 'id, pig_id, type, date, syncStatus',
+  
+  feed_inventory: 'id, name, cost_per_kg, current_stock, current_stock_kg, batch_code, batch_number, syncStatus',
+  feed_usage: 'id, feed_id, pen_id, pig_id, date, syncStatus',
+  
+  access_logs: 'id, date, syncStatus',
+  user_points: 'id, user_id, syncStatus',
+
+  // SYNC QUEUE (For Offline Sync) - kept for compatibility with new approach
+  sync_queue: '++id, table, type, data, status' // status: 'pending', 'synced'
 });
+
+// Helper to queue changes (kept for backward compatibility but syncStatus is primary method)
+export const queueChange = async (table, type, data) => {
+  await db.sync_queue.add({
+    table,
+    type, 
+    data,
+    status: 'pending',
+    timestamp: Date.now()
+  });
+  // Trigger sync if online? handled in SyncService
+};
+
+// Hook for UUID generation (simple version)
+import { v4 as uuidv4 } from 'uuid';
+export const generateId = () => uuidv4();
 
 db.version(2).stores({
-  pigs: 'id, syncStatus, status, updated_at, numero_arete'
-});
-
-db.version(3).stores({
-  health_records: 'id, pig_id, syncStatus, isDeleted, updated_at'
-});
-
-db.version(4).stores({
-  weight_logs: 'id, pig_id, date_measured, syncStatus, updated_at',
-  breeding_events: 'id, pig_id, event_date, syncStatus, updated_at'
-});
-
-db.version(5).stores({
-  feed_inventory: 'id, name, syncStatus, updated_at',
-  feed_usage: 'id, pig_id, feed_id, date, syncStatus, updated_at',
-  access_logs: 'id, visitor_name, entry_time, syncStatus, updated_at',
-  sanitary_zones: 'id, name', // Usually read-only or rare updates
-  user_points: 'id, user_id, event_date, syncStatus, updated_at'
-});
+  farms: 'id, name, plan', 
+  users: 'id, email, role_id',
+  roles: 'id, name',
+  permissions: 'id, slug',
+  role_permissions: '[role_id+permission_id], role_id, permission_id',
+  sections: 'id, name, syncStatus',
+  pens: 'id, section_id, name, syncStatus',
+  pigs: 'id, pen_id, tag_number, numero_arete, sex, sexo, stage, etapa, status, syncStatus, updated_at',
+  weight_logs: 'id, pig_id, weight, date, date_measured, syncStatus',
+  breeding_events: 'id, pig_id, event_type, date, syncStatus',
+  health_events: 'id, pig_id, type, date, syncStatus',
+  feed_inventory: 'id, name, cost_per_kg, current_stock, current_stock_kg, batch_code, batch_number, syncStatus',
+  feed_usage: 'id, feed_id, pen_id, pig_id, amount_kg, date, syncStatus',
+  access_logs: 'id, date, syncStatus',
+  user_points: 'id, user_id, syncStatus',
+  sync_queue: '++id, table, type, data, status'
+}).upgrade(() => {});
