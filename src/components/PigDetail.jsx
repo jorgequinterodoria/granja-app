@@ -88,7 +88,7 @@ export default function PigDetail({ pigId, onBack }) {
                     </button>
                     <div>
                         <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                            {pig.nombre || 'Sin Nombre'} <span className="text-slate-400 font-normal">#{pig.numero_arete}</span>
+                            #{pig.numero_arete} 
                         </h2>
                         <div className="flex gap-3 text-sm text-slate-500 mt-1">
                             <span className="bg-white/80 px-3 py-1 rounded-full text-slate-600 font-medium shadow-sm">{pig.sexo}</span>

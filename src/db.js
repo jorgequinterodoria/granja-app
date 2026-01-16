@@ -52,7 +52,7 @@ db.version(2).stores({
   role_permissions: '[role_id+permission_id], role_id, permission_id',
   sections: 'id, name, syncStatus',
   pens: 'id, section_id, name, syncStatus',
-  pigs: 'id, pen_id, tag_number, numero_arete, sex, sexo, stage, etapa, status, syncStatus, updated_at',
+  pigs: 'id, pen_id, tag_number, numero_arete, sex, sexo, stage, etapa, status, entry_date, syncStatus, updated_at',
   weight_logs: 'id, pig_id, weight, date, date_measured, syncStatus',
   breeding_events: 'id, pig_id, event_type, date, syncStatus',
   health_events: 'id, pig_id, type, date, syncStatus',
