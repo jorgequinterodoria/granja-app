@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
 import { syncService } from '../services/syncService';
 import Spinner from './Spinner';
 
@@ -8,14 +6,32 @@ export default function ConnectionBadge() {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [isSyncing, setIsSyncing] = useState(false);
     const [syncProgress, setSyncProgress] = useState(null);
-
-    // Real-time count of pending records
-    const pendingCount = useLiveQuery(
-        () => db.pigs.where('syncStatus').equals('pending').count()
-    );
+    const [pendingCount, setPendingCount] = useState(0);
 
     useEffect(() => {
-        const handleOnline = () => setIsOnline(true);
+        let mounted = true;
+        const loadPending = async () => {
+            const total = await syncService.getPendingCount();
+            if (mounted) setPendingCount(total);
+        };
+        loadPending();
+        const interval = setInterval(loadPending, 5000);
+        return () => {
+            mounted = false;
+            clearInterval(interval);
+        };
+    }, []);
+
+    useEffect(() => {
+        const handleOnline = async () => {
+            setIsOnline(true);
+            try {
+                setIsSyncing(true);
+                await syncService.sync();
+            } finally {
+                setIsSyncing(false);
+            }
+        };
         const handleOffline = () => setIsOnline(false);
 
         window.addEventListener('online', handleOnline);

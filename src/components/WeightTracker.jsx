@@ -41,6 +41,7 @@ export default function WeightTracker({ pigId }) {
                 pig_id: pigId,
                 weight: parseFloat(newWeight),
                 date_measured: dateMeasured,
+                date: dateMeasured,
                 syncStatus: 'pending',
                 updated_at: new Date().toISOString()
             });
@@ -58,7 +59,7 @@ export default function WeightTracker({ pigId }) {
 
     // Sort for Chart: Oldest -> Newest
     const chartData = weights
-        ? [...weights].sort((a, b) => new Date(a.date_measured) - new Date(b.date_measured))
+        ? [...weights].sort((a, b) => new Date(a.date_measured || a.date) - new Date(b.date_measured || b.date))
         : [];
 
     // Sort for List: Newest -> Oldest
@@ -188,20 +189,20 @@ export default function WeightTracker({ pigId }) {
                 {/* List History */}
                 <div>
                     <h3 className="text-lg font-bold text-slate-700 mb-4">Historial</h3>
-                    <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
-                        {listData.length === 0 && <p className="text-slate-400 text-sm">No hay registros.</p>}
-                        {listData.map(log => (
-                            <div key={log.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100 hover:bg-slate-100 hover:border-slate-200 transition-all duration-200">
-                                <span className="text-slate-600 font-medium">{log.date_measured}</span>
-                                <div className="flex items-center gap-3">
-                                    <span className="font-bold text-slate-800">{log.weight} kg</span>
-                                    <span className="text-[10px] text-slate-400">
-                                        {log.syncStatus === 'synced' ? '☁️' : '⏳'}
-                                    </span>
+                            <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
+                                {listData.length === 0 && <p className="text-slate-400 text-sm">No hay registros.</p>}
+                                {listData.map(log => (
+                                    <div key={log.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100 hover:bg-slate-100 hover:border-slate-200 transition-all duration-200">
+                                <span className="text-slate-600 font-medium">{log.date_measured || log.date}</span>
+                                    <div className="flex items-center gap-3">
+                                        <span className="font-bold text-slate-800">{log.weight} kg</span>
+                                        <span className="text-[10px] text-slate-400">
+                                            {log.syncStatus === 'synced' ? '☁️' : '⏳'}
+                                        </span>
+                                    </div>
                                 </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
                 </div>
 
                 {/* Add Form */}

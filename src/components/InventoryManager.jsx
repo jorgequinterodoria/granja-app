@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useInventory } from '../hooks/useInventory';
 
 export default function InventoryManager() {
-    const { inventory, addFeed, updateStock } = useInventory();
+    const { inventory, addStock } = useInventory();
     const [isAdding, setIsAdding] = useState(false);
 
     // New Feed Form
@@ -10,11 +10,7 @@ export default function InventoryManager() {
 
     const handleCreate = async (e) => {
         e.preventDefault();
-        await addFeed({
-            ...form,
-            cost_per_kg: parseFloat(form.cost_per_kg),
-            current_stock_kg: parseFloat(form.current_stock_kg)
-        });
+        await addStock(form.name, form.cost_per_kg, form.current_stock_kg, form.batch_number);
         setIsAdding(false);
         setForm({ name: '', cost_per_kg: '', current_stock_kg: '', batch_number: '' });
     };
