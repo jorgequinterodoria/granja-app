@@ -62,3 +62,9 @@ db.version(2).stores({
   user_points: 'id, user_id, syncStatus',
   sync_queue: '++id, table, type, data, status'
 }).upgrade(() => {});
+
+db.version(3).stores({
+  roles: 'id, name, syncStatus',
+  permissions: 'id, slug', // Read-only, synced from server
+  role_permissions: '[role_id+permission_id], role_id, permission_id, syncStatus'
+}).upgrade(() => {});

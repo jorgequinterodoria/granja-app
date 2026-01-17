@@ -86,7 +86,18 @@ export const syncService = {
         capacity: r.capacity
       }),
       access_logs: (r) => ({ ...r }),
-      user_points: (r) => ({ ...r })
+      user_points: (r) => ({ ...r }),
+      roles: (r) => ({
+        id: r.id,
+        name: r.name,
+        description: r.description,
+        created_at: r.created_at,
+        deleted_at: r.deleted_at
+      }),
+      role_permissions: (r) => ({
+        role_id: r.role_id,
+        permission_id: r.permission_id
+      })
     };
 
     const fromServer = {
@@ -164,7 +175,9 @@ export const syncService = {
       sections: (r) => ({ ...r, syncStatus: 'synced' }),
       pens: (r) => ({ ...r, syncStatus: 'synced' }),
       access_logs: (r) => ({ ...r, syncStatus: 'synced' }),
-      user_points: (r) => ({ ...r, syncStatus: 'synced' })
+      user_points: (r) => ({ ...r, syncStatus: 'synced' }),
+      roles: (r) => ({ ...r, syncStatus: 'synced' }),
+      role_permissions: (r) => ({ ...r, syncStatus: 'synced' })
     };
 
     // 1. Get pending changes
@@ -180,10 +193,13 @@ export const syncService = {
     const pendingFeedUsage = await db.feed_usage.where('syncStatus').equals('pending').toArray();
     const pendingAccess = await db.access_logs.where('syncStatus').equals('pending').toArray();
     const pendingPoints = await db.user_points.where('syncStatus').equals('pending').toArray();
+    const pendingRoles = await db.roles.where('syncStatus').equals('pending').toArray();
+    const pendingRolePerms = await db.role_permissions.where('syncStatus').equals('pending').toArray();
 
     const allPendingCount = pendingSections.length + pendingPens.length + pendingPigs.length + 
                             pendingHealth.length + pendingWeight.length + pendingBreeding.length +
-                            pendingFeedInv.length + pendingFeedUsage.length + pendingAccess.length + pendingPoints.length;
+                            pendingFeedInv.length + pendingFeedUsage.length + pendingAccess.length + pendingPoints.length +
+                            pendingRoles.length + pendingRolePerms.length;
 
     console.log('🔄 Syncing', allPendingCount, 'pending changes...');
 
@@ -228,7 +244,9 @@ export const syncService = {
               feed_inventory: pendingFeedInv.map(toServer.feed_inventory),
               feed_usage: pendingFeedUsage.map(toServer.feed_usage),
               access_logs: pendingAccess.map(toServer.access_logs),
-              user_points: pendingPoints.map(toServer.user_points)
+              user_points: pendingPoints.map(toServer.user_points),
+              roles: pendingRoles.map(toServer.roles),
+              role_permissions: pendingRolePerms.map(toServer.role_permissions)
           },
           lastPulledAt,
         }),
@@ -245,7 +263,7 @@ export const syncService = {
 
       // 2. Process server response using a transaction
       await db.transaction('rw', db.sections, db.pens, db.pigs, db.health_events, db.weight_logs, db.breeding_events, 
-           db.feed_inventory, db.feed_usage, db.access_logs, db.user_points, async () => {
+           db.feed_inventory, db.feed_usage, db.access_logs, db.user_points, db.roles, db.role_permissions, db.permissions, async () => {
         
         // Mark pushed items as SYNCED
         const markSynced = async (table, items) => {
@@ -266,12 +284,19 @@ export const syncService = {
         await markSynced(db.feed_usage, pendingFeedUsage);
         await markSynced(db.access_logs, pendingAccess);
         await markSynced(db.user_points, pendingPoints);
+        await markSynced(db.roles, pendingRoles);
+        await markSynced(db.role_permissions, pendingRolePerms);
 
 
         // Apply Server Updates
         const mergeByNameAndPut = async (table, updates) => {
             if (updates && updates.length > 0) {
                 for (const item of updates) {
+                    if (item.deleted_at && item.id) {
+                        await table.delete(item.id);
+                        continue;
+                    }
+
                     if (!item?.name) continue;
                     const existing = await table.where('name').equals(item.name).toArray();
                     const toDelete = existing.filter(e => e.id !== item.id).map(e => e.id);
@@ -297,8 +322,23 @@ export const syncService = {
 
         const applyUpdates = async (table, updates) => {
             if (updates && updates.length > 0) {
-                const itemsToPut = updates.map(item => item);
-                await table.bulkPut(itemsToPut);
+                const toDelete = [];
+                const toPut = [];
+                
+                updates.forEach(item => {
+                    if (item.deleted_at && item.id) {
+                        toDelete.push(item.id);
+                    } else {
+                        toPut.push(item);
+                    }
+                });
+
+                if (toDelete.length > 0) {
+                    await table.bulkDelete(toDelete);
+                }
+                if (toPut.length > 0) {
+                    await table.bulkPut(toPut);
+                }
             }
         };
 
@@ -313,6 +353,13 @@ export const syncService = {
         await applyUpdates(db.feed_usage, (data.changes?.feed_usage?.updated || []).map(fromServer.feed_usage));
         await applyUpdates(db.access_logs, (data.changes?.access_logs?.updated || []).map(fromServer.access_logs));
         await applyUpdates(db.user_points, (data.changes?.user_points?.updated || []).map(fromServer.user_points));
+        await applyUpdates(db.roles, (data.changes?.roles?.updated || []).map(fromServer.roles));
+        await applyUpdates(db.role_permissions, (data.changes?.role_permissions?.updated || []).map(fromServer.role_permissions));
+
+        // Read-only tables
+        if (data.changes?.permissions?.updated) {
+            await db.permissions.bulkPut(data.changes.permissions.updated);
+        }
 
       });
 
@@ -331,7 +378,7 @@ export const syncService = {
 
   async getPendingCount() {
     const tables = [db.sections, db.pens, db.pigs, db.health_events, db.weight_logs, db.breeding_events, 
-                    db.feed_inventory, db.feed_usage, db.access_logs, db.user_points];
+                    db.feed_inventory, db.feed_usage, db.access_logs, db.user_points, db.roles, db.role_permissions];
     let total = 0;
     for (const table of tables) {
         total += await table.where('syncStatus').equals('pending').count();

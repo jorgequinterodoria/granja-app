@@ -15,6 +15,7 @@ const PigForm = () => {
         sectionId: '',
         pen_id: '',
         birth_date: '',
+        entry_date: '', // Added entry_date
         weight: ''
     });
 
@@ -30,11 +31,14 @@ const PigForm = () => {
             tag_number: formData.tag_number,
             sex: formData.sex,
             stage: formData.stage,
-            pen_id: parseInt(formData.pen_id),
-            birth_date: formData.birth_date,
+            // pen_id: parseInt(formData.pen_id), // OLD: assumed number
+            pen_id: formData.pen_id, // NEW: keep as string (UUID)
+            birth_date: formData.birth_date || null,
+            entry_date: formData.entry_date || new Date().toISOString().split('T')[0], // Default to today if empty
             weight: parseFloat(formData.weight),
             status: 'Activo',
             syncStatus: 'pending',
+            created_at: new Date().toISOString(), // Correctly set created_at
             updated_at: new Date().toISOString()
         };
 
@@ -109,6 +113,27 @@ const PigForm = () => {
                             <option>Reemplazo</option>
                             <option>Reproductor</option>
                         </select>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-slate-400 mb-1">Fecha de Nacimiento</label>
+                        <input
+                            type="date"
+                            className="w-full bg-slate-700 border-slate-600 rounded-lg px-4 py-2 text-white"
+                            value={formData.birth_date}
+                            onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-slate-400 mb-1">Fecha de Ingreso</label>
+                        <input
+                            type="date"
+                            className="w-full bg-slate-700 border-slate-600 rounded-lg px-4 py-2 text-white"
+                            value={formData.entry_date}
+                            onChange={(e) => setFormData({ ...formData, entry_date: e.target.value })}
+                        />
                     </div>
                 </div>
 

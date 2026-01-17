@@ -85,7 +85,9 @@ function Navbar() {
     const isActive = (path) => location.pathname === path;
 
     // If not logged in and not on login page, we might want to hide navbar or show minimal
-    if (!user && location.pathname === '/login') return null;
+    // ALSO HIDE ON LOGIN PAGE to avoid white frame
+    if (location.pathname === '/login') return null;
+    if (!user && location.pathname !== '/login') return null;
 
     return (
         <nav
@@ -192,79 +194,90 @@ function App() {
     return (
         <AuthProvider>
             <Router>
-                <div className="min-h-screen bg-slate-100 text-slate-800 font-sans pb-20">
-                    <InstallPrompt />
-                    <Navbar />
-
-                    <div className="max-w-6xl mx-auto p-4 md:p-8">
-                        <Routes>
-                            {/* Public Route */}
-                            <Route path="/login" element={<Login />} />
-
-                            {/* SuperAdmin Dashboard */}
-                            <Route path="/superadmin" element={
-                                <SuperAdminRoute>
-                                    <PageTransition><SuperAdminDashboard /></PageTransition>
-                                </SuperAdminRoute>
-                            } />
-
-                            {/* Root - Redirect based on user type */}
-                            <Route path="/" element={
-                                <PrivateRoute>
-                                    <PageTransition><Home /></PageTransition>
-                                </PrivateRoute>
-                            } />
-
-                            {/* Farm Admin Routes */}
-                            <Route path="/pigs/new" element={
-                                <FarmAdminRoute>
-                                    <PageTransition><SaaSPigForm /></PageTransition>
-                                </FarmAdminRoute>
-                            } />
-
-                            <Route path="/feeding" element={
-                                <FarmAdminRoute>
-                                    <PageTransition><SaaSFeedingLog /></PageTransition>
-                                </FarmAdminRoute>
-                            } />
-
-                            <Route path="/settings" element={
-                                <FarmAdminRoute>
-                                    <PageTransition><FarmSettings /></PageTransition>
-                                </FarmAdminRoute>
-                            } />
-
-                            {/* Existing Routes (Protected for Farm Admins) */}
-                            <Route path="/features" element={
-                                <FarmAdminRoute>
-                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                        <div className="lg:col-span-2 space-y-8">
-                                            <PageTransition><Home /></PageTransition>
-                                        </div>
-                                        <div className="space-y-8">
-                                            <WorkerLeaderboard />
-                                            <div className="bg-white p-6 rounded-xl shadow-sm">
-                                                <h3 className="font-bold mb-4">Acciones Rápidas</h3>
-                                                <Link to="/pigs/new" className="block w-full text-center bg-blue-600 text-white py-2 rounded-lg mb-2">
-                                                    Registrar Cerdo
-                                                </Link>
-                                                <Link to="/feeding" className="block w-full text-center bg-emerald-600 text-white py-2 rounded-lg">
-                                                    Alimentación Masiva
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </FarmAdminRoute>
-                            } />
-
-                            <Route path="/bioseguridad" element={<FarmAdminRoute><PageTransition><BiosecurityAccess /></PageTransition></FarmAdminRoute>} />
-                            <Route path="/alimentacion" element={<FarmAdminRoute><PageTransition><FeedPage /></PageTransition></FarmAdminRoute>} />
-
-                        </Routes>
-                    </div>
-                </div>
+                <AppContent />
             </Router>
         </AuthProvider>
+    );
+}
+
+// Separate component to use hooks like useLocation
+function AppContent() {
+    const location = useLocation();
+    const isLoginPage = location.pathname === '/login';
+
+    return (
+        <div className={`min-h-screen font-sans ${isLoginPage ? 'bg-slate-900' : 'bg-slate-100 pb-20'}`}>
+            <InstallPrompt />
+            <Navbar />
+
+            {/* If login page, don't constrain width/padding. Else use standard layout container */}
+            <div className={isLoginPage ? '' : 'max-w-6xl mx-auto p-4 md:p-8'}>
+                <Routes>
+                    {/* Public Route */}
+                    <Route path="/login" element={<Login />} />
+
+                    {/* SuperAdmin Dashboard */}
+                    <Route path="/superadmin" element={
+                        <SuperAdminRoute>
+                            <PageTransition><SuperAdminDashboard /></PageTransition>
+                        </SuperAdminRoute>
+                    } />
+
+                    {/* Root - Redirect based on user type */}
+                    <Route path="/" element={
+                        <PrivateRoute>
+                            <PageTransition><Home /></PageTransition>
+                        </PrivateRoute>
+                    } />
+
+                    {/* Farm Admin Routes */}
+                    <Route path="/pigs/new" element={
+                        <FarmAdminRoute>
+                            <PageTransition><SaaSPigForm /></PageTransition>
+                        </FarmAdminRoute>
+                    } />
+
+                    <Route path="/feeding" element={
+                        <FarmAdminRoute>
+                            <PageTransition><SaaSFeedingLog /></PageTransition>
+                        </FarmAdminRoute>
+                    } />
+
+                    <Route path="/settings" element={
+                        <FarmAdminRoute>
+                            <PageTransition><FarmSettings /></PageTransition>
+                        </FarmAdminRoute>
+                    } />
+
+                    {/* Existing Routes (Protected for Farm Admins) */}
+                    <Route path="/features" element={
+                        <FarmAdminRoute>
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                <div className="lg:col-span-2 space-y-8">
+                                    <PageTransition><Home /></PageTransition>
+                                </div>
+                                <div className="space-y-8">
+                                    <WorkerLeaderboard />
+                                    <div className="bg-white p-6 rounded-xl shadow-sm">
+                                        <h3 className="font-bold mb-4">Acciones Rápidas</h3>
+                                        <Link to="/pigs/new" className="block w-full text-center bg-blue-600 text-white py-2 rounded-lg mb-2">
+                                            Registrar Cerdo
+                                        </Link>
+                                        <Link to="/feeding" className="block w-full text-center bg-emerald-600 text-white py-2 rounded-lg">
+                                            Alimentación Masiva
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        </FarmAdminRoute>
+                    } />
+
+                    <Route path="/bioseguridad" element={<FarmAdminRoute><PageTransition><BiosecurityAccess /></PageTransition></FarmAdminRoute>} />
+                    <Route path="/alimentacion" element={<FarmAdminRoute><PageTransition><FeedPage /></PageTransition></FarmAdminRoute>} />
+
+                </Routes>
+            </div>
+        </div>
     );
 }
 
