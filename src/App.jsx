@@ -23,6 +23,7 @@ import FarmSettings from './pages/FarmSettings';
 import SaaSPigForm from './pages/PigForm';
 import SaaSFeedingLog from './pages/FeedingLog';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import FarmUsers from './pages/FarmUsers';
 
 // Helper for Protected Routes
 const PrivateRoute = ({ children }) => {
@@ -125,6 +126,9 @@ function Navbar() {
                                     <Link to="/features" className={`text-sm font-bold px-4 py-2 rounded-xl text-slate-200 hover:bg-white/10 ${isActive('/features') ? 'bg-white/10' : ''}`}>
                                         🏠 Dashboard
                                     </Link>
+                                    <Link to="/users" className={`text-sm font-bold px-4 py-2 rounded-xl text-slate-200 hover:bg-white/10 ${isActive('/users') ? 'bg-white/10' : ''}`}>
+                                        👥 Usuarios
+                                    </Link>
                                     <Link to="/pigs/new" className={`text-sm font-bold px-4 py-2 rounded-xl text-slate-200 hover:bg-white/10 ${isActive('/pigs/new') ? 'bg-white/10' : ''}`}>
                                         ➕ Cerdo
                                     </Link>
@@ -170,6 +174,8 @@ function Navbar() {
                         ) : (
                             /* Farm Admin Mobile Menu */
                             <>
+                                <Link to="/features" onClick={() => setIsMobileMenuOpen(false)} className="block text-slate-200 hover:text-white py-2">Dashboard</Link>
+                                <Link to="/users" onClick={() => setIsMobileMenuOpen(false)} className="block text-slate-200 hover:text-white py-2">Usuarios</Link>
                                 <Link to="/pigs/new" onClick={() => setIsMobileMenuOpen(false)} className="block text-slate-200 hover:text-white py-2">Nuevo Cerdo</Link>
                                 <Link to="/feeding" onClick={() => setIsMobileMenuOpen(false)} className="block text-slate-200 hover:text-white py-2">Alimentación Masiva</Link>
                                 <Link to="/settings" onClick={() => setIsMobileMenuOpen(false)} className="block text-slate-200 hover:text-white py-2">Configuración</Link>
@@ -231,6 +237,12 @@ function AppContent() {
                     } />
 
                     {/* Farm Admin Routes */}
+                    <Route path="/users" element={
+                        <FarmAdminRoute>
+                            <PageTransition><FarmUsers /></PageTransition>
+                        </FarmAdminRoute>
+                    } />
+
                     <Route path="/pigs/new" element={
                         <FarmAdminRoute>
                             <PageTransition><SaaSPigForm /></PageTransition>
