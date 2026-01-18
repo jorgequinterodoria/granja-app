@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 
 export const useInventory = () => {
-  const inventory = useLiveQuery(() => db.feed_inventory.toArray());
+  const inventory = useLiveQuery(() => db.feed_inventory.toArray()) || [];
 
   const addStock = async (name, cost, amount, batchCode) => {
     const id = crypto.randomUUID(); // ensure UUID
@@ -48,5 +48,13 @@ export const useInventory = () => {
     await db.feed_usage.add(usageData);
   };
 
-  return { inventory, addStock, recordConsumption };
+  const updateItem = async (id, updates) => {
+    await db.feed_inventory.update(id, {
+        ...updates,
+        syncStatus: 'pending',
+        updated_at: new Date().toISOString()
+    });
+  };
+
+  return { inventory, addStock, recordConsumption, updateItem };
 };
