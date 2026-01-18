@@ -72,7 +72,7 @@ const FarmSettings = () => {
             <h1 className="text-3xl font-bold text-slate-800 mb-6">Configuración de Granja</h1>
 
             {/* Tabs */}
-            <div className="flex gap-2 border-b border-slate-200 mb-6 overflow-x-auto">
+            <div className="flex gap-2 border-b border-slate-200 mb-6 overflow-x-auto pb-1 scrollbar-hide -mx-6 px-6 sm:mx-0 sm:px-0">
                 <button 
                     onClick={() => setActiveTab('infrastructure')}
                     className={`px-4 py-2 font-medium transition-colors border-b-2 whitespace-nowrap ${
@@ -112,7 +112,7 @@ const FarmSettings = () => {
                     {/* Sections Management */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
                         <h2 className="text-xl font-semibold text-slate-700 mb-4">Secciones (Áreas)</h2>
-                        <div className="flex gap-4 mb-4">
+                        <div className="flex flex-col sm:flex-row gap-4 mb-4">
                             <input
                                 type="text"
                                 className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
@@ -122,7 +122,7 @@ const FarmSettings = () => {
                             />
                             <button
                                 onClick={handleAddSection}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors w-full sm:w-auto"
                             >
                                 Agregar
                             </button>
@@ -141,7 +141,7 @@ const FarmSettings = () => {
                         <h2 className="text-xl font-semibold text-slate-700 mb-4">Chiqueros / Corrales</h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <select
-                                className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
+                                className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 w-full"
                                 value={newPen.sectionId}
                                 onChange={(e) => setNewPen({ ...newPen, sectionId: e.target.value })}
                             >
@@ -152,14 +152,14 @@ const FarmSettings = () => {
                             </select>
                             <input
                                 type="text"
-                                className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
+                                className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 w-full"
                                 placeholder="Nombre (ej. C1)"
                                 value={newPen.name}
                                 onChange={(e) => setNewPen({ ...newPen, name: e.target.value })}
                             />
                             <input
                                 type="number"
-                                className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
+                                className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 w-full"
                                 placeholder="Capacidad"
                                 value={newPen.capacity}
                                 onChange={(e) => setNewPen({ ...newPen, capacity: e.target.value })}
@@ -193,9 +193,9 @@ const FarmSettings = () => {
                     <h2 className="text-xl font-semibold text-slate-700 mb-4">Catálogo de Medicamentos</h2>
                     <p className="text-sm text-slate-500 mb-4">Registra medicamentos y sus tiempos de retiro obligatorio.</p>
                     
-                    <div className="flex gap-4 mb-6 items-end">
+                    <div className="flex flex-col md:flex-row gap-4 mb-6 md:items-end">
                         <div className="flex-1">
-                            <label className="text-xs font-bold text-slate-500 uppercase">Nombre</label>
+                            <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Nombre</label>
                             <input
                                 type="text"
                                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
@@ -204,8 +204,8 @@ const FarmSettings = () => {
                                 onChange={(e) => setNewMedication({ ...newMedication, name: e.target.value })}
                             />
                         </div>
-                        <div className="w-32">
-                            <label className="text-xs font-bold text-slate-500 uppercase">Días Retiro</label>
+                        <div className="w-full md:w-32">
+                            <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Días Retiro</label>
                             <input
                                 type="number"
                                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
@@ -216,13 +216,50 @@ const FarmSettings = () => {
                         </div>
                         <button
                             onClick={handleAddMedication}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors h-[42px]"
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors h-[42px] w-full md:w-auto"
                         >
                             Agregar
                         </button>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    {/* Mobile Card View */}
+                    <div className="block md:hidden space-y-4">
+                        {medications?.filter(m => !m.deleted_at).map(m => (
+                            <div key={m.id} className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex justify-between items-center">
+                                <div>
+                                    <h4 className="font-bold text-slate-800">{m.name}</h4>
+                                    <div className="mt-1">
+                                        {m.withdrawal_days > 0 ? (
+                                            <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold">
+                                                Retiro: {m.withdrawal_days} días
+                                            </span>
+                                        ) : (
+                                            <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold">
+                                                Sin retiro
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => handleDeleteMedication(m.id)}
+                                    className="p-2 text-red-500 hover:bg-red-50 rounded-full"
+                                    title="Eliminar"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        ))}
+                        {(!medications || medications.filter(m => !m.deleted_at).length === 0) && (
+                            <div className="text-center py-8 text-slate-400 italic bg-slate-50 rounded-lg">
+                                No hay medicamentos registrados.
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-slate-200">
