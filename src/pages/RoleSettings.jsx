@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../db';
+import { db, generateId } from '../db';
 import { useLiveQuery } from 'dexie-react-hooks';
 
 const RoleSettings = () => {
-    const roles = useLiveQuery(() => db.roles.where('deleted_at').equals(null).toArray());
+    const roles = useLiveQuery(() => db.roles.filter(role => !role.deleted_at).toArray());
     const permissions = useLiveQuery(() => db.permissions.toArray());
     
     const [isEditing, setIsEditing] = useState(false);
@@ -52,14 +52,8 @@ const RoleSettings = () => {
                     updated_at: new Date().toISOString()
                 });
             } else {
-                // Create (generate temp numeric ID or UUID, assuming backend handles sync)
-                // For Dexie auto-increment, add returns key. But we need to sync.
-                // Best practice: use timestamp or UUID for local ID if not synced yet?
-                // Our schema uses ++id for roles? No, 'id, name, syncStatus'. 
-                // We should probably use a timestamp-based ID for local creation to avoid collision before sync?
-                // Or let backend assign ID?
-                // Current sync logic expects ID. Let's use Date.now() as temp ID.
-                roleId = Date.now(); 
+                // Create (generate UUID)
+                roleId = generateId(); 
                 await db.roles.add({
                     id: roleId,
                     name: roleName,

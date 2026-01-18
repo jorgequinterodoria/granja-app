@@ -14,6 +14,7 @@ import InventoryManager from './components/InventoryManager';
 import FeedingForm from './components/FeedingForm';
 import PageTransition from './components/PageTransition';
 import InstallPrompt from './components/InstallPrompt';
+import DailyTasks from './components/DailyTasks'; // Imported
 
 // SaaS Pages
 import Login from './pages/Login';
@@ -257,6 +258,10 @@ function AppContent() {
                                     <PageTransition><Home /></PageTransition>
                                 </div>
                                 <div className="space-y-8">
+                                    {/* Daily Tasks Widget */}
+                                    <div className="h-96">
+                                        <DailyTasks />
+                                    </div>
                                     <WorkerLeaderboard />
                                     <div className="bg-white p-6 rounded-xl shadow-sm">
                                         <h3 className="font-bold mb-4">Acciones Rápidas</h3>

@@ -68,3 +68,9 @@ db.version(3).stores({
   permissions: 'id, slug', // Read-only, synced from server
   role_permissions: '[role_id+permission_id], role_id, permission_id, syncStatus'
 }).upgrade(() => {});
+
+db.version(4).stores({
+  medications: 'id, name, syncStatus',
+  pigs: 'id, pen_id, tag_number, numero_arete, sex, sexo, stage, etapa, status, entry_date, father_id, mother_id, syncStatus, updated_at',
+  health_events: 'id, pig_id, type, date, medication_id, withdrawal_end_date, syncStatus',
+}).upgrade(() => {});

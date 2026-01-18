@@ -2,14 +2,40 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import PigListSkeleton from './PigListSkeleton';
 import ScrollReveal from './ScrollReveal';
+import SanitaryAlert from './SanitaryAlert';
 
 export default function PigList({ onSelectPig }) {
     const allPigs = useLiveQuery(() => db.pigs.toArray());
     const pens = useLiveQuery(() => db.pens.toArray());
     const sections = useLiveQuery(() => db.sections.toArray());
+    
+    // Fetch active health withdrawals
+    const activeWithdrawals = useLiveQuery(() => 
+        db.health_events
+            .filter(h => h.withdrawal_end_date)
+            .toArray()
+    );
+
+    // Map pig_id -> max withdrawal date
+    const withdrawalMap = {};
+    if (activeWithdrawals) {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        
+        activeWithdrawals.forEach(h => {
+            const end = new Date(h.withdrawal_end_date);
+            end.setHours(0,0,0,0);
+            
+            if (end >= today) {
+                if (!withdrawalMap[h.pig_id] || end > new Date(withdrawalMap[h.pig_id])) {
+                    withdrawalMap[h.pig_id] = h.withdrawal_end_date;
+                }
+            }
+        });
+    }
 
     const pigs = allPigs?.filter(p => !p.deleted_at);
-console.log('cerdos',pigs)
+
     if (!pigs) return <PigListSkeleton />;
 
     if (pigs.length === 0) {
@@ -62,6 +88,8 @@ console.log('cerdos',pigs)
                                             🐷
                                         </span>
                                         {pig.tag_number || pig.numero_arete}
+                                        {/* Sanitary Alert Icon */}
+                                        <SanitaryAlert withdrawalEndDate={withdrawalMap[pig.id]} />
                                     </h3>
                                     {pig.nombre && (
                                         <p className="text-sm font-medium text-slate-500 mt-1 ml-10">{pig.nombre}</p>
