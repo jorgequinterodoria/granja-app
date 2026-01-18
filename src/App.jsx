@@ -257,6 +257,7 @@ function AppContent() {
                                     <PageTransition><Home /></PageTransition>
                                 </div>
                                 <div className="space-y-8">
+                                    <LowStockAlert />
                                     {/* Daily Tasks Widget */}
                                     <div className="h-96">
                                         <DailyTasks />

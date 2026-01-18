@@ -15,7 +15,13 @@ const FeedingLog = () => {
 
     // Get pigs in selected pen
     const activePigs = useLiveQuery(
-        () => penId ? db.pigs.where({ pen_id: parseInt(penId), status: 'Activo' }).toArray() : [],
+        async () => {
+            if (!penId) return [];
+            return await db.pigs
+                .where('pen_id').equals(penId)
+                .filter(pig => pig.status === 'Activo')
+                .toArray();
+        },
         [penId]
     );
 
@@ -29,25 +35,10 @@ const FeedingLog = () => {
         try {
             const amountPerPig = parseFloat(totalAmount) / activePigs.length;
 
-            // We record individual consumption for better analytics (Profitability per pig)
-            // BUT we also need to decrement stock only ONCE from inventory? 
-            // The hook `recordConsumption` handles both: decrement stock and log usage.
-            // If we call it N times, it will decrement N times.
-            // So we must be careful.
-            // Better approach: 
-            // 1. Decrement TOTAL from inventory manually or via a special bulk method in hook.
-            // 2. Add N usage records.
-            // Let's rely on the hook calling loop for now, but ensure concurrency doesn't invalid stock check?
-            // JS is single threaded so promises will run sequentially or we await them.
-
-            // Optimized: Create a Bulk consumption method in hook?
-            // For now, let's just loop and await. It's safe enough for small farms.
-
-            // CONFIRMATION
             if (!window.confirm(`¿Alimentar ${activePigs.length} cerdos con ${amountPerPig.toFixed(2)}kg cada uno?`)) return;
 
             for (const pig of activePigs) {
-                await recordConsumption(feedId, amountPerPig, pig.id, parseInt(penId));
+                await recordConsumption(feedId, amountPerPig, pig.id, penId);
             }
 
             alert('Alimentación masiva registrada correctamente');
@@ -59,7 +50,7 @@ const FeedingLog = () => {
 
     return (
         <div className="max-w-3xl mx-auto p-6">
-            <h2 className="text-3xl font-bold text-white mb-8">Registro de Alimentación</h2>
+            <h2 className="text-3xl font-bold  mb-8">Registro de Alimentación</h2>
 
             <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-xl">
                 <div className="flex items-center justify-between mb-6">
