@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db';
 import Spinner from './Spinner';
+import BreedingCheck from './BreedingCheck';
 
 export default function BreedingManager({ pigId }) {
     const events = useLiveQuery(
@@ -12,11 +13,20 @@ export default function BreedingManager({ pigId }) {
             .toArray()
         , [pigId]);
 
+    const boars = useLiveQuery(
+        () => db.pigs
+            .where('sex').equals('Macho')
+            .filter(p => !p.deleted_at && p.status === 'Activo')
+            .toArray()
+    );
+
     const [form, setForm] = useState({
         event_type: 'Monta',
         event_date: new Date().toISOString().split('T')[0],
         details: ''
     });
+
+    const [selectedBoar, setSelectedBoar] = useState('');
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -36,10 +46,20 @@ export default function BreedingManager({ pigId }) {
         setSuccess(false);
         
         try {
+            // Append Boar info to details if selected
+            let finalDetails = form.details;
+            if (form.event_type === 'Monta' && selectedBoar) {
+                const boar = boars.find(b => b.id === selectedBoar);
+                if (boar) {
+                    finalDetails = `Macho: ${boar.tag_number}. ${finalDetails}`;
+                }
+            }
+
             await db.breeding_events.add({
                 id: uuidv4(),
                 pig_id: pigId,
                 ...form,
+                details: finalDetails,
                 syncStatus: 'pending',
                 updated_at: new Date().toISOString()
             });
@@ -48,6 +68,7 @@ export default function BreedingManager({ pigId }) {
                 event_date: new Date().toISOString().split('T')[0],
                 details: ''
             });
+            setSelectedBoar('');
             setSuccess(true);
             // Clear success message after 3 seconds
             setTimeout(() => setSuccess(false), 3000);
@@ -191,6 +212,24 @@ export default function BreedingManager({ pigId }) {
                                 <option value="Destete">Destete</option>
                             </select>
                         </div>
+
+                        {form.event_type === 'Monta' && (
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Semental (Macho)</label>
+                                <select
+                                    value={selectedBoar}
+                                    onChange={e => setSelectedBoar(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all duration-200 outline-none"
+                                >
+                                    <option value="">Seleccionar Macho...</option>
+                                    {boars?.map(b => (
+                                        <option key={b.id} value={b.id}>{b.tag_number} {b.nombre ? `- ${b.nombre}` : ''}</option>
+                                    ))}
+                                </select>
+                                <BreedingCheck boarId={selectedBoar} sowId={pigId} />
+                            </div>
+                        )}
+
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Fecha</label>
                             <input
@@ -207,7 +246,7 @@ export default function BreedingManager({ pigId }) {
                                 value={form.details}
                                 onChange={e => setForm({ ...form, details: e.target.value })}
                                 rows="3"
-                                placeholder="Ej: Macho utilizado, Cant. lechones, estado..."
+                                placeholder="Ej: Cant. lechones, estado..."
                                 className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all duration-200 outline-none resize-none"
                             ></textarea>
                         </div>

@@ -2,11 +2,39 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import PigListSkeleton from './PigListSkeleton';
 import ScrollReveal from './ScrollReveal';
+import SanitaryAlert from './SanitaryAlert';
 
 export default function PigList({ onSelectPig }) {
-    const pigs = useLiveQuery(
-        () => db.pigs.toArray()
+    const allPigs = useLiveQuery(() => db.pigs.toArray());
+    const pens = useLiveQuery(() => db.pens.toArray());
+    const sections = useLiveQuery(() => db.sections.toArray());
+    
+    // Fetch active health withdrawals
+    const activeWithdrawals = useLiveQuery(() => 
+        db.health_events
+            .filter(h => h.withdrawal_end_date)
+            .toArray()
     );
+
+    // Map pig_id -> max withdrawal date
+    const withdrawalMap = {};
+    if (activeWithdrawals) {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        
+        activeWithdrawals.forEach(h => {
+            const end = new Date(h.withdrawal_end_date);
+            end.setHours(0,0,0,0);
+            
+            if (end >= today) {
+                if (!withdrawalMap[h.pig_id] || end > new Date(withdrawalMap[h.pig_id])) {
+                    withdrawalMap[h.pig_id] = h.withdrawal_end_date;
+                }
+            }
+        });
+    }
+
+    const pigs = allPigs?.filter(p => !p.deleted_at);
 
     if (!pigs) return <PigListSkeleton />;
 
@@ -26,6 +54,15 @@ export default function PigList({ onSelectPig }) {
 
     // Sort by updated_at desc (newest first)
     const sortedPigs = [...pigs].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+
+    const getUbicacion = (pig) => {
+        if (!pig.pen_id) return 'Sin ubicación';
+        const pen = pens?.find(p => p.id == pig.pen_id);
+        if (!pen) return 'Ubicación desconocida';
+        
+        const section = sections?.find(s => s.id == pen.section_id);
+        return `${section?.name || 'Sección ?'} - ${pen.name}`;
+    };
 
     return (
         <div className="mt-12">
@@ -51,6 +88,8 @@ export default function PigList({ onSelectPig }) {
                                             🐷
                                         </span>
                                         {pig.tag_number || pig.numero_arete}
+                                        {/* Sanitary Alert Icon */}
+                                        <SanitaryAlert withdrawalEndDate={withdrawalMap[pig.id]} />
                                     </h3>
                                     {pig.nombre && (
                                         <p className="text-sm font-medium text-slate-500 mt-1 ml-10">{pig.nombre}</p>
@@ -69,7 +108,16 @@ export default function PigList({ onSelectPig }) {
                                 </div>
                             </div>
 
-                            <div className="flex justify-between items-end pl-3 pt-4 border-t border-slate-100">
+                            {/* Location Badge */}
+                            <div className="mt-4 flex items-center text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                <svg className="w-4 h-4 mr-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <span className="text-sm font-medium truncate">{getUbicacion(pig)}</span>
+                            </div>
+
+                            <div className="mt-4 flex justify-between items-center pt-4 border-t border-slate-100">
                                 <div className="flex items-center gap-2">
                                     <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-secondary-100 to-secondary-200">
                                         <svg className="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

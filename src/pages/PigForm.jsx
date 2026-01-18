@@ -7,6 +7,20 @@ const PigForm = () => {
     const { hasPermission } = useAuth();
     const sections = useLiveQuery(() => db.sections.toArray());
     const pens = useLiveQuery(() => db.pens.toArray());
+    
+    // Fetch active pigs for parents
+    const boars = useLiveQuery(() => 
+        db.pigs
+            .where('sex').equals('Macho')
+            .filter(p => !p.deleted_at && p.status === 'Activo' && p.stage === 'Reproductor')
+            .toArray()
+    );
+    const sows = useLiveQuery(() => 
+        db.pigs
+            .where('sex').equals('Hembra')
+            .filter(p => !p.deleted_at && p.status === 'Activo' && p.stage === 'Reproduc')
+            .toArray()
+    );
 
     const [formData, setFormData] = useState({
         tag_number: '',
@@ -15,7 +29,11 @@ const PigForm = () => {
         sectionId: '',
         pen_id: '',
         birth_date: '',
-        weight: ''
+        entry_date: '', 
+        weight: '',
+        father_id: '',
+        mother_id: '',
+        genetics_score: ''
     });
 
     // Filter pens based on section
@@ -30,11 +48,19 @@ const PigForm = () => {
             tag_number: formData.tag_number,
             sex: formData.sex,
             stage: formData.stage,
-            pen_id: parseInt(formData.pen_id),
-            birth_date: formData.birth_date,
+            pen_id: formData.pen_id, 
+            birth_date: formData.birth_date || null,
+            entry_date: formData.entry_date || new Date().toISOString().split('T')[0], 
             weight: parseFloat(formData.weight),
             status: 'Activo',
+            
+            // New Fields
+            father_id: formData.father_id || null,
+            mother_id: formData.mother_id || null,
+            genetics_score: formData.genetics_score ? parseInt(formData.genetics_score) : null,
+
             syncStatus: 'pending',
+            created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         };
 
@@ -51,7 +77,19 @@ const PigForm = () => {
         await db.weight_logs.add(weightLog);
 
         alert('Cerdo registrado correctamente');
-        setFormData({ ...formData, tag_number: '', weight: '' });
+        setFormData({ 
+            tag_number: '', 
+            weight: '', 
+            sex: 'Macho',
+            stage: 'Lechon',
+            sectionId: '',
+            pen_id: '',
+            birth_date: '',
+            entry_date: '',
+            father_id: '',
+            mother_id: '',
+            genetics_score: ''
+        });
     };
 
     if (!hasPermission('pig.create')) {
@@ -109,6 +147,67 @@ const PigForm = () => {
                             <option>Reemplazo</option>
                             <option>Reproductor</option>
                         </select>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-slate-400 mb-1">Fecha de Nacimiento</label>
+                        <input
+                            type="date"
+                            className="w-full bg-slate-700 border-slate-600 rounded-lg px-4 py-2 text-white"
+                            value={formData.birth_date}
+                            onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-slate-400 mb-1">Fecha de Ingreso</label>
+                        <input
+                            type="date"
+                            className="w-full bg-slate-700 border-slate-600 rounded-lg px-4 py-2 text-white"
+                            value={formData.entry_date}
+                            onChange={(e) => setFormData({ ...formData, entry_date: e.target.value })}
+                        />
+                    </div>
+                </div>
+
+                {/* Genetics Section */}
+                <div className="bg-slate-700/30 p-4 rounded-lg space-y-4">
+                    <label className="text-sm font-semibold text-purple-300">Genética (Opcional)</label>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-slate-400 text-sm mb-1">Padre (Macho)</label>
+                            <select
+                                className="w-full bg-slate-700 border-slate-600 rounded-lg px-4 py-2 text-white"
+                                value={formData.father_id}
+                                onChange={(e) => setFormData({ ...formData, father_id: e.target.value })}
+                            >
+                                <option value="">Desconocido</option>
+                                {boars?.map(p => <option key={p.id} value={p.id}>{p.tag_number}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-slate-400 text-sm mb-1">Madre (Hembra)</label>
+                            <select
+                                className="w-full bg-slate-700 border-slate-600 rounded-lg px-4 py-2 text-white"
+                                value={formData.mother_id}
+                                onChange={(e) => setFormData({ ...formData, mother_id: e.target.value })}
+                            >
+                                <option value="">Desconocido</option>
+                                {sows?.map(p => <option key={p.id} value={p.id}>{p.tag_number}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-slate-400 text-sm mb-1">Puntaje Genético (1-100)</label>
+                            <input
+                                type="number"
+                                min="1"
+                                max="100"
+                                className="w-full bg-slate-700 border-slate-600 rounded-lg px-4 py-2 text-white"
+                                value={formData.genetics_score}
+                                onChange={(e) => setFormData({ ...formData, genetics_score: e.target.value })}
+                            />
+                        </div>
                     </div>
                 </div>
 

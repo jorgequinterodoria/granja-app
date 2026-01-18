@@ -41,15 +41,24 @@ export const useProfitability = (pigId) => {
 
     return {
       currentWeight,
-      estimatedValue,
+      marketValue: estimatedValue, // Alias for consistent naming
       feedCost,
       healthCost,
       totalCost,
-      profit,
-      isProfitable
+      netProfit: profit, // Alias
+      roi: totalCost > 0 ? ((profit / totalCost) * 100).toFixed(1) : 0,
+      isProfitable,
+      isLoading: false
     };
 
   }, [pigId]);
 
-  return stats;
+  // Return default safe object while loading
+  return stats || { 
+      totalCost: 0, 
+      netProfit: 0, 
+      roi: 0, 
+      marketValue: 0, 
+      isLoading: true 
+  };
 };

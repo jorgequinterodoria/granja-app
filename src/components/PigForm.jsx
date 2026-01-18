@@ -9,7 +9,8 @@ export default function PigForm() {
         sexo: 'Macho', // Default
         etapa: 'Lechón', // Default
         peso: '',
-        fecha_nacimiento: new Date().toISOString().split('T')[0] // Today
+        fecha_nacimiento: new Date().toISOString().split('T')[0], // Today
+        fecha_ingreso: new Date().toISOString().split('T')[0] // Today - Default
     });
 
     const [error, setError] = useState(null);
@@ -54,6 +55,7 @@ export default function PigForm() {
                 id: uuidv4(),
                 ...formData,
                 status: 'Activo',
+                entry_date: formData.fecha_ingreso, // Map to correct DB field
                 syncStatus: 'pending',
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
@@ -111,6 +113,27 @@ export default function PigForm() {
             <form onSubmit={handleSubmit} className="space-y-4">
 
                 {/* Identifiers */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-1">Fecha Ingreso *</label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <input
+                                type="date"
+                                required
+                                max={new Date().toISOString().split('T')[0]}
+                                className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all duration-200 outline-none"
+                                value={formData.fecha_ingreso}
+                                onChange={e => setFormData({ ...formData, fecha_ingreso: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-600 mb-1">Arete ID *</label>
