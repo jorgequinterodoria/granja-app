@@ -11,6 +11,7 @@ import ConnectionBadge from './components/ConnectionBadge';
 import BiosecurityAccess from './components/BiosecurityAccess';
 import WorkerLeaderboard from './components/WorkerLeaderboard';
 import InventoryManager from './components/InventoryManager';
+import LowStockAlert from './components/LowStockAlert';
 import FeedingForm from './components/FeedingForm';
 import PageTransition from './components/PageTransition';
 import InstallPrompt from './components/InstallPrompt';
@@ -55,11 +56,6 @@ function FeedPage() {
         <div className="space-y-8">
             <h2 className="text-2xl font-black text-slate-800">🌽 Gestión de Alimentación</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* We can offer both the old simple form and the new Mass SaaS form */}
-                <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-slate-600">Alimentación Individual</h3>
-                    <FeedingForm />
-                </div>
                 <div className="space-y-4">
                     <h3 className="text-lg font-bold text-slate-600">Inventario</h3>
                     <InventoryManager />
@@ -134,6 +130,9 @@ function Navbar() {
                                     </Link>
                                     <Link to="/feeding" className={`text-sm font-bold px-4 py-2 rounded-xl text-slate-200 hover:bg-white/10 ${isActive('/feeding') ? 'bg-white/10' : ''}`}>
                                         🌽 Masivo
+                                    </Link>
+                                    <Link to="/alimentacion" className={`text-sm font-bold px-4 py-2 rounded-xl text-slate-200 hover:bg-white/10 ${isActive('/alimentacion') ? 'bg-white/10' : ''}`}>
+                                        📦 Inventario
                                     </Link>
                                     <Link to="/settings" className={`text-sm font-bold px-4 py-2 rounded-xl text-slate-200 hover:bg-white/10 ${isActive('/settings') ? 'bg-white/10' : ''}`}>
                                         ⚙️ Config
@@ -258,6 +257,7 @@ function AppContent() {
                                     <PageTransition><Home /></PageTransition>
                                 </div>
                                 <div className="space-y-8">
+                                    <LowStockAlert />
                                     {/* Daily Tasks Widget */}
                                     <div className="h-96">
                                         <DailyTasks />
