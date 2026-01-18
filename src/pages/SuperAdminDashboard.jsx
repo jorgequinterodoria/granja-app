@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthProvider';
+import FarmDetailsModal from '../components/FarmDetailsModal';
 
 const SuperAdminDashboard = () => {
     const { token } = useAuth();
     const [farms, setFarms] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateForm, setShowCreateForm] = useState(false);
+    const [selectedFarm, setSelectedFarm] = useState(null);
     const [formData, setFormData] = useState({
         farmName: '',
         adminEmail: '',
@@ -182,7 +184,10 @@ const SuperAdminDashboard = () => {
                             </div>
 
                             <div className="mt-4 pt-4 border-t border-slate-700">
-                                <button className="w-full text-blue-400 hover:text-blue-300 text-sm font-semibold">
+                                <button 
+                                    onClick={() => setSelectedFarm(farm)}
+                                    className="w-full text-blue-400 hover:text-blue-300 text-sm font-semibold transition-colors"
+                                >
                                     Ver Detalles →
                                 </button>
                             </div>
@@ -190,6 +195,14 @@ const SuperAdminDashboard = () => {
                     ))
                 )}
             </div>
+
+            {/* Farm Details Modal */}
+            <FarmDetailsModal 
+                farm={selectedFarm} 
+                isOpen={!!selectedFarm} 
+                onClose={() => setSelectedFarm(null)} 
+                onUpdate={loadFarms}
+            />
         </div>
     );
 };
