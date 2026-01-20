@@ -1,10 +1,15 @@
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import PigListSkeleton from './PigListSkeleton';
 import ScrollReveal from './ScrollReveal';
 import SanitaryAlert from './SanitaryAlert';
+import MovePigsModal from './MovePigsModal';
 
 export default function PigList({ onSelectPig }) {
+    const [selectedPigs, setSelectedPigs] = useState(new Set());
+    const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+
     const allPigs = useLiveQuery(() => db.pigs.toArray());
     const pens = useLiveQuery(() => db.pens.toArray());
     const sections = useLiveQuery(() => db.sections.toArray());
@@ -57,6 +62,7 @@ export default function PigList({ onSelectPig }) {
 
     const getUbicacion = (pig) => {
         if (!pig.pen_id) return 'Sin ubicación';
+        // Use loose comparison for ID matching
         const pen = pens?.find(p => p.id == pig.pen_id);
         if (!pen) return 'Ubicación desconocida';
         
@@ -64,8 +70,45 @@ export default function PigList({ onSelectPig }) {
         return `${section?.name || 'Sección ?'} - ${pen.name}`;
     };
 
+    const toggleSelection = (id) => {
+        const newSelection = new Set(selectedPigs);
+        if (newSelection.has(id)) {
+            newSelection.delete(id);
+        } else {
+            newSelection.add(id);
+        }
+        setSelectedPigs(newSelection);
+    };
+
+    const clearSelection = () => setSelectedPigs(new Set());
+
     return (
-        <div className="mt-12">
+        <div className="mt-12 relative">
+            {/* Floating Action Bar for Bulk Actions */}
+            <div className={`fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 transition-all duration-300 ${selectedPigs.size > 0 ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                <div className="bg-slate-900/90 backdrop-blur-md text-white px-6 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-6">
+                    <span className="font-bold text-sm">
+                        {selectedPigs.size} {selectedPigs.size === 1 ? 'cerdo seleccionado' : 'cerdos seleccionados'}
+                    </span>
+                    <div className="h-6 w-px bg-slate-700"></div>
+                    <button 
+                        onClick={() => setIsMoveModalOpen(true)}
+                        className="flex items-center gap-2 text-sm font-bold text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                        Mover
+                    </button>
+                    <button 
+                        onClick={clearSelection}
+                        className="text-slate-400 hover:text-white transition-colors"
+                    >
+                        ✕
+                    </button>
+                </div>
+            </div>
+
             <h2 className="text-2xl font-bold text-slate-800 mb-6 px-2">Animales Registrados ({pigs.length})</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
@@ -73,8 +116,22 @@ export default function PigList({ onSelectPig }) {
                     <ScrollReveal key={pig.id} delay={index * 100}>
                         <div
                             onClick={() => onSelectPig && onSelectPig(pig.id)}
-                            className="group bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden border border-slate-100 hover:border-primary-200 hover:-translate-y-1 hover:scale-[1.02] active:scale-[0.98]"
+                            className={`group bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden border ${selectedPigs.has(pig.id) ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-slate-100 hover:border-primary-200'} hover:-translate-y-1 hover:scale-[1.02] active:scale-[0.98]`}
                         >
+                            {/* Checkbox for Selection */}
+                            <div 
+                                onClick={(e) => { e.stopPropagation(); toggleSelection(pig.id); }}
+                                className="absolute top-4 right-4 z-10"
+                            >
+                                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${selectedPigs.has(pig.id) ? 'bg-primary-500 border-primary-500' : 'bg-white border-slate-200 group-hover:border-primary-300'}`}>
+                                    {selectedPigs.has(pig.id) && (
+                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    )}
+                                </div>
+                            </div>
+
                             {/* Gradient Accent */}
                             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-500 via-primary-400 to-secondary-400"></div>
 
@@ -151,6 +208,16 @@ export default function PigList({ onSelectPig }) {
                     </ScrollReveal>
                 ))}
             </div>
+
+            <MovePigsModal 
+                isOpen={isMoveModalOpen}
+                onClose={() => setIsMoveModalOpen(false)}
+                selectedPigIds={Array.from(selectedPigs)}
+                onSuccess={() => {
+                    clearSelection();
+                    // Optionally show a toast here
+                }}
+            />
         </div>
     );
 }
