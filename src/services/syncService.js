@@ -113,6 +113,9 @@ export const syncService = {
         created_at: r.created_at,
         updated_at: r.updated_at,
         deleted_at: r.deleted_at,
+        father_id: r.father_id,
+        mother_id: r.mother_id,
+        genetics_score: r.genetics_score,
         syncStatus: 'synced'
       }),
       weight_logs: (r) => ({
