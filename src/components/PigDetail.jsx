@@ -9,6 +9,7 @@ const PigDetail = ({ pigId, onBack }) => {
     const pig = useLiveQuery(() => db.pigs.get(pigId), [pigId]);
     const pen = useLiveQuery(() => pig?.pen_id ? db.pens.get(pig.pen_id) : null, [pig?.pen_id]);
     const section = useLiveQuery(() => pen?.section_id ? db.sections.get(pen.section_id) : null, [pen?.section_id]);
+    console.log('cerdo',pig)
     const weightLogs = useLiveQuery(() => 
         db.weight_logs
             .where('pig_id').equals(pigId)
@@ -150,8 +151,8 @@ const PigDetail = ({ pigId, onBack }) => {
                 <div>
                     <div className="flex items-center gap-3 mb-2">
                         <span className="text-4xl">🐷</span>
-                        <h1 className="text-3xl font-black text-slate-800">{pig.tag_number}</h1>
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${pig.sex === 'Macho' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>
+                        <h1 className="text-3xl font-black text-slate-800">{pig.numero_arete}</h1>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${pig.sexo === 'Macho' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>
                             {pig.sex}
                         </span>
                     </div>
@@ -165,7 +166,7 @@ const PigDetail = ({ pigId, onBack }) => {
                 <div className="flex gap-4 items-center">
                     <div className="text-right">
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Peso Actual</p>
-                        <p className="text-3xl font-bold text-slate-800">{pig.weight} <span className="text-lg text-slate-400 font-normal">kg</span></p>
+                        <p className="text-3xl font-bold text-slate-800">{weightLogs?.[0]?.weight || '-'} <span className="text-lg text-slate-400 font-normal">kg</span></p>
                     </div>
                     {hasPermission('pig.delete') && (
                         <button 
@@ -208,15 +209,15 @@ const PigDetail = ({ pigId, onBack }) => {
                             <h3 className="font-bold text-slate-700 border-b pb-2">Datos Generales</h3>
                             <div className="grid grid-cols-2 gap-y-4 text-sm">
                                 <div className="text-slate-500">Fecha Nacimiento</div>
-                                <div className="font-medium">{pig.birth_date || 'No registrada'}</div>
+                                <div className="font-medium">{pig.fecha_nacimiento? new Date(pig.fecha_nacimiento).toLocaleDateString() : 'No registrada'}</div>
                                 
                                 <div className="text-slate-500">Fecha Ingreso</div>
-                                <div className="font-medium">{pig.entry_date || 'No registrada'}</div>
+                                <div className="font-medium">{pig.created_at? new Date(pig.created_at).toLocaleDateString() : 'No registrada'}</div>
                                 
                                 <div className="text-slate-500">Edad Aprox.</div>
                                 <div className="font-medium">
-                                    {pig.birth_date 
-                                        ? Math.floor((new Date() - new Date(pig.birth_date)) / (1000 * 60 * 60 * 24 * 30)) + ' meses' 
+                                    {pig.fecha_nacimiento 
+                                        ? Math.floor((new Date() - new Date(pig.fecha_nacimiento)) / (1000 * 60 * 60 * 24 * 30)) + ' meses' 
                                         : '-'}
                                 </div>
                             </div>
@@ -253,7 +254,9 @@ const PigDetail = ({ pigId, onBack }) => {
                             <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
                                 {weightLogs?.map(log => (
                                     <div key={log.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
-                                        <span className="text-slate-500 text-sm">{log.date}</span>
+                                        <span className="text-slate-500 text-sm">
+                                            {log.date ? new Date(log.date).toLocaleDateString() : '-'}
+                                        </span>
                                         <span className="font-bold text-slate-800">{log.weight} kg</span>
                                     </div>
                                 ))}
